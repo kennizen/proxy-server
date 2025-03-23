@@ -6,4 +6,7 @@ the endpoint and forward it.
 3. After getting an request now i have to forward it back to the client that requested it
 
 // load balancer
-1. 
+1. Look for best algos to route the traffic between the servers.
+2. Create a class to inject the algo as a dependency
+3. Create an interface for the algo class as an abstraction
+4. Make a health check function to work with the load balancer
