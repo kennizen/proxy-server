@@ -1,13 +1,5 @@
-import { ServerResponse, IncomingMessage } from "http";
-import pino from "pino-http";
+import pino from "pino";
+import pretty from "pino-pretty";
 
-export function logger(req: IncomingMessage, res: ServerResponse) {
-  pino({
-    transport: {
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-      },
-    },
-  })(req, res);
-}
+const logger = pino(pretty());
+export default logger;

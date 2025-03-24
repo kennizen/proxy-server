@@ -1,9 +1,11 @@
 import { createServer } from "http";
 import serverConfig from "../config/config.json";
 import { Proxy } from "../proxy/proxy";
-import { logger } from "../utils/logger";
+import { LoadBalancer } from "../proxy/loadBalancer";
+import { RoundRobin } from "../lib/loadBalancingAlgos/roundRobin";
+import logger from "../utils/logger";
 
-interface ServerConfig {
+export interface ServerConfig {
   resources: {
     name: string;
     endpoint: string;
@@ -17,9 +19,13 @@ const PORT = 8080;
 
 const server = createServer((req, res) => {
   const servers: ServerConfig = serverConfig;
-  const toBeForwardedServer = servers.resources[0];
 
-  logger(req, res);
+  logger.info(req);
+
+  const lb = LoadBalancer.getInstance();
+  lb.algo = RoundRobin.getInstance();
+
+  const toBeForwardedServer = lb.getServer(servers.resources);
 
   const proxy = new Proxy(
     {

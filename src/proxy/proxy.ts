@@ -1,11 +1,12 @@
 import { RequestOptions, ServerResponse, request } from "http";
 import type { URL } from "url";
+import logger from "../utils/logger";
 
 export class Proxy {
-  private options: RequestOptions | string | URL;
+  private options: RequestOptions;
   private clientRes: ServerResponse;
 
-  constructor(opt: RequestOptions | string | URL, res: ServerResponse) {
+  constructor(opt: RequestOptions, res: ServerResponse) {
     this.options = opt;
     this.clientRes = res;
   }
@@ -28,6 +29,13 @@ export class Proxy {
 
       res.on("end", () => {
         this.clientRes.writeHead(res.statusCode ?? 500, res.headers);
+        logger.info({
+          msg: "Response from server",
+          status: res.statusCode,
+          headers: res.headers,
+          server: this.options,
+          data,
+        });
         this.clientRes.end(data);
       });
     }).on("error", (err) => {
