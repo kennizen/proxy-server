@@ -1,5 +1,4 @@
 import { RequestOptions, ServerResponse, request } from "http";
-import type { URL } from "url";
 import logger from "../utils/logger";
 
 export class Proxy {

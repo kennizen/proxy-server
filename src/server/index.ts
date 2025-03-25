@@ -4,6 +4,7 @@ import { Proxy } from "../proxy/proxy";
 import { LoadBalancer } from "../proxy/loadBalancer";
 import { RoundRobin } from "../lib/loadBalancingAlgos/roundRobin";
 import logger from "../utils/logger";
+import { ServerPool } from "../lib/serverPool/serverPool";
 
 export interface ServerConfig {
   resources: {
@@ -21,6 +22,8 @@ const server = createServer((req, res) => {
   const servers: ServerConfig = serverConfig;
 
   logger.info(req);
+
+  new ServerPool(servers.resources);
 
   const lb = LoadBalancer.getInstance();
   lb.algo = RoundRobin.getInstance();
