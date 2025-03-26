@@ -16,3 +16,8 @@ the endpoint and forward it.
 2. Design the pool in such a way so that the at any given point when the heathy servers are requested
 it is there in the pool to be served
 3. If all the servers become unhealthy then send a 500 response to the client saying th server is in no-op
+
+// cache and more
+1. Add more loadbalancing algos
+2. Add a caching mechanism
+3. Add retry logic for unhealthy servers

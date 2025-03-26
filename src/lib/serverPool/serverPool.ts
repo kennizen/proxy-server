@@ -18,9 +18,9 @@ const TIMEOUT = serverConfig.healthCheck.timeout;
 
 export class ServerPool {
   pool: Map<string, Server>;
-  monitorInterval: NodeJS.Timeout | null = null;
-  monitorCycle: boolean;
-  servers: ServerConfig["resources"];
+  private monitorInterval: NodeJS.Timeout | null = null;
+  private monitorCycle: boolean;
+  private servers: ServerConfig["resources"];
   no_op: "available" | "unavailable";
 
   constructor(servers: ServerConfig["resources"]) {
@@ -40,7 +40,7 @@ export class ServerPool {
     }, INTERVAL);
   }
 
-  async monitorHealth() {
+  private async monitorHealth() {
     const servers = this.servers;
 
     for (const server of servers) {
@@ -90,7 +90,7 @@ export class ServerPool {
     this.checkIfNoOp();
   }
 
-  checkIfNoOp() {
+  private checkIfNoOp() {
     if ([...this.pool].length <= 0) this.no_op = "unavailable";
     else this.no_op = "available";
   }
