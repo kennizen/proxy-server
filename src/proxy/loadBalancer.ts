@@ -1,26 +1,14 @@
 import { AlgoClass } from "../lib/loadBalancingAlgos/abstract";
-import { ServerConfig } from "../server";
+import { Server } from "../lib/serverPool/serverPool";
 
 export class LoadBalancer {
-  private static instance: LoadBalancer | null = null;
-  algo: AlgoClass | null = null;
+  algo: AlgoClass;
 
-  private constructor() {}
-
-  static getInstance() {
-    if (LoadBalancer.instance === null) {
-      LoadBalancer.instance = new LoadBalancer();
-    }
-    return LoadBalancer.instance;
-  }
-
-  set balancingAlgo(algo: AlgoClass) {
+  constructor(algo: AlgoClass) {
     this.algo = algo;
   }
 
-  getServer(servers: ServerConfig["resources"]): ServerConfig["resources"][0] {
-    if (this.algo === null) throw new Error("Loadbalancing algo in not initialised");
-
+  getServer(servers: Server[]): Server {
     return this.algo.getServer(servers);
   }
 }

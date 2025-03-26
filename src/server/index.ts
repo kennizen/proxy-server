@@ -1,47 +1,37 @@
 import { createServer } from "http";
 import serverConfig from "../config/config.json";
-import { Proxy } from "../proxy/proxy";
-import { LoadBalancer } from "../proxy/loadBalancer";
 import { RoundRobin } from "../lib/loadBalancingAlgos/roundRobin";
-import logger from "../utils/logger";
 import { ServerPool } from "../lib/serverPool/serverPool";
+import { LoadBalancer } from "../proxy/loadBalancer";
+import { Proxy } from "../proxy/proxy";
+import logger from "../utils/logger";
 
-export interface ServerConfig {
-  resources: {
-    name: string;
-    endpoint: string;
-    host: string;
-    port: number;
-    base_url: string;
-  }[];
-}
-
-const PORT = 8080;
+const PORT = serverConfig.port ?? 8080;
+const serverPool = new ServerPool(serverConfig.resources);
+const loadBalancer = new LoadBalancer(new RoundRobin());
 
 const server = createServer((req, res) => {
-  const servers: ServerConfig = serverConfig;
-
   logger.info(req);
 
-  new ServerPool(servers.resources);
+  if (serverPool.no_op === "unavailable") {
+    res.writeHead(500);
+    res.end("Server is not ready to serve requests");
+    return;
+  }
 
-  const lb = LoadBalancer.getInstance();
-  lb.algo = RoundRobin.getInstance();
+  const healthyServers = serverPool.getHealthyServers();
+  const toBeForwardedServer = loadBalancer.getServer(healthyServers);
 
-  const toBeForwardedServer = lb.getServer(servers.resources);
-
-  const proxy = new Proxy(
+  const proxyReq = new Proxy(
     {
-      hostname: toBeForwardedServer.host,
-      port: toBeForwardedServer.port,
+      hostname: toBeForwardedServer.details.host,
+      port: toBeForwardedServer.details.port,
       path: req.url,
       method: req.method,
       headers: req.headers,
     },
     res
-  );
-
-  const proxyReq = proxy.request();
+  ).request();
 
   req.pipe(proxyReq);
 });

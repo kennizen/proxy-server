@@ -1,20 +1,15 @@
-import { ServerConfig } from "../../server";
+import { ServerConfig } from "../../types/server";
+import { Server } from "../serverPool/serverPool";
 import { AlgoClass } from "./abstract";
 
 export class RoundRobin implements AlgoClass {
-  private static instance: RoundRobin | null = null;
-  private lastSelectedServer: number = 0;
+  private lastSelectedServer: number;
 
-  private constructor() {}
-
-  static getInstance() {
-    if (RoundRobin.instance === null) {
-      RoundRobin.instance = new RoundRobin();
-    }
-    return RoundRobin.instance;
+  constructor() {
+    this.lastSelectedServer = -1;
   }
 
-  getServer(servers: ServerConfig["resources"]) {
+  getServer(servers: Server[]) {
     const curServer = (this.lastSelectedServer + 1) % servers.length;
     this.lastSelectedServer = curServer;
     return servers[curServer];

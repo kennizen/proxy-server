@@ -1,5 +1,5 @@
-import { ServerConfig } from "../../server";
+import { Server } from "../serverPool/serverPool";
 
 export interface AlgoClass {
-  getServer: (servers: ServerConfig["resources"]) => ServerConfig["resources"][0];
+  getServer: (servers: Server[]) => Server;
 }
