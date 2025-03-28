@@ -1,4 +1,3 @@
-import { ServerConfig } from "../../types/server";
 import { Server } from "../serverPool/serverPool";
 import { AlgoClass } from "./abstract";
 
@@ -12,6 +11,6 @@ export class RoundRobin implements AlgoClass {
   getServer(servers: Server[]) {
     const curServer = (this.lastSelectedServer + 1) % servers.length;
     this.lastSelectedServer = curServer;
-    return servers[curServer];
+    return servers[curServer] ?? null;
   }
 }

@@ -31,7 +31,9 @@ export class ServerPool {
     this.init();
   }
 
-  init() {
+  async init() {
+    await this.monitorHealth();
+
     this.monitorInterval = setInterval(async () => {
       if (this.monitorCycle) return;
       this.monitorCycle = true;
@@ -100,24 +102,14 @@ export class ServerPool {
   }
 
   getHealthyServers() {
-    return Array.from(
-      this.pool
-        .entries()
-        .map(([_, v]) => v)
-        .filter((s) => s.status.health !== "Unhealthy")
-    );
+    return [...this.pool.entries()].map(([_, v]) => v).filter((s) => s.status.health !== "Unhealthy");
   }
 
   getUnhealthyServers() {
-    return Array.from(
-      this.pool
-        .entries()
-        .map(([_, v]) => v)
-        .filter((s) => s.status.health !== "Healthy")
-    );
+    return [...this.pool.entries()].map(([_, v]) => v).filter((s) => s.status.health !== "Healthy");
   }
 
   getServers() {
-    return Array.from(this.pool.entries().map(([_, v]) => v));
+    return [...this.pool.entries()].map(([_, v]) => v);
   }
 }

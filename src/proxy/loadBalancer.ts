@@ -8,7 +8,7 @@ export class LoadBalancer {
     this.algo = algo;
   }
 
-  getServer(servers: Server[]): Server {
+  getServer(servers: Server[]): Server | null {
     return this.algo.getServer(servers);
   }
 }

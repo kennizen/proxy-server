@@ -13,14 +13,29 @@ const loadBalancer = new LoadBalancer(new RoundRobin());
 const server = createServer((req, res) => {
   logger.info(req);
 
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    return res.end();
+  }
+
   if (serverPool.no_op === "unavailable") {
-    res.writeHead(500);
-    res.end("Server is not ready to serve requests");
-    return;
+    res.writeHead(503);
+    return res.end("Server is not ready to serve requests");
   }
 
   const healthyServers = serverPool.getHealthyServers();
   const toBeForwardedServer = loadBalancer.getServer(healthyServers);
+
+  console.log({ healthyServers });
+  console.log({ toBeForwardedServer });
+
+  if (toBeForwardedServer === null) {
+    res.writeHead(503);
+    return res.end("Server is not ready to serve requests");
+  }
 
   const proxyReq = new Proxy(
     {
