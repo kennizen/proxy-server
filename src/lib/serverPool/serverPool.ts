@@ -1,12 +1,12 @@
-import { get } from "http";
-import logger from "../../utils/logger";
-import { ServerConfig } from "../../types/server";
 import serverConfig from "../../config/config.json";
+import { IServerConfig } from "../../types/server";
+import { healthCheck } from "../../utils/healthCheck";
+import logger from "../../utils/logger";
 
 export type ServerHealth = "Healthy" | "Unhealthy";
 
 export type Server = {
-  details: ServerConfig["resources"][0];
+  details: IServerConfig["resources"][0];
   status: {
     code: number | string;
     health: ServerHealth;
@@ -14,16 +14,15 @@ export type Server = {
 };
 
 const INTERVAL = serverConfig.healthCheck.interval;
-const TIMEOUT = serverConfig.healthCheck.timeout;
 
 export class ServerPool {
   pool: Map<string, Server>;
   private monitorInterval: NodeJS.Timeout | null = null;
   private monitorCycle: boolean;
-  private servers: ServerConfig["resources"];
+  private servers: IServerConfig["resources"];
   no_op: "available" | "unavailable";
 
-  constructor(servers: ServerConfig["resources"]) {
+  constructor(servers: IServerConfig["resources"]) {
     this.pool = new Map();
     this.monitorCycle = false;
     this.servers = servers;
@@ -31,70 +30,94 @@ export class ServerPool {
     this.init();
   }
 
-  async init() {
-    await this.monitorHealth();
-
-    this.monitorInterval = setInterval(async () => {
-      if (this.monitorCycle) return;
-      this.monitorCycle = true;
-      await this.monitorHealth();
-      this.monitorCycle = false;
-    }, INTERVAL);
+  init() {
+    logger.info("INITAILIZING SERVER POOL");
+    this.initialHealthMonitoring();
   }
 
-  private async monitorHealth() {
+  private async initialHealthMonitoring() {
     const servers = this.servers;
 
     for (const server of servers) {
-      let data: Server;
+      const serverFit = await healthCheck(server.base_url);
 
-      try {
-        data = await new Promise((resolve, reject) => {
-          const req = get(`${server.base_url}`, (res) => {
-            const statusCode = res.statusCode ?? 500;
-            if (statusCode >= 200 && statusCode < 300) {
-              resolve({
-                details: server,
-                status: {
-                  code: statusCode,
-                  health: "Healthy",
-                },
-              });
-            }
-          });
-
-          req.on("error", (err) => {
-            reject(err);
-          });
-
-          req.setTimeout(TIMEOUT, () => {
-            req.destroy();
-            reject(new Error("Cannot get server status"));
-          });
+      if (serverFit === "available") {
+        this.pool.set(`${server.base_url}`, {
+          details: server,
+          status: {
+            code: 200,
+            health: "Healthy",
+          },
         });
-
-        this.pool.set(`${data.details.base_url}`, data);
-        logger.info(data, "Healthy server");
-      } catch (error) {
-        const e = error as Error & { code: string };
-        const sv = this.pool.get(`${server.base_url}`);
-        if (sv) {
-          sv.status = {
-            code: e.code,
+      } else {
+        this.pool.set(`${server.base_url}`, {
+          details: server,
+          status: {
+            code: 500,
             health: "Unhealthy",
-          };
-          this.pool.set(`${server.base_url}`, sv);
-        }
-        logger.error(e);
+          },
+        });
       }
     }
 
     this.checkIfNoOp();
+
+    if (this.no_op === "available") logger.info([...this.pool.values()], "SERVER POOL INITIALIZED");
+    else {
+      logger.error("SERVER POOL EMPTY, FAILED TO INITIALIZE");
+      logger.info("STARTING HEALTH CHECK");
+      this.monitorHealth();
+    }
+  }
+
+  monitorHealth() {
+    this.stopMonitoring();
+
+    this.monitorInterval = setInterval(async () => {
+      if (this.monitorCycle) return;
+
+      this.monitorCycle = true;
+
+      const unheatlhyServers = this.getUnhealthyServers();
+
+      for (const srvr of unheatlhyServers) {
+        const serverFit = await healthCheck(srvr.details.base_url);
+
+        if (serverFit === "available") {
+          this.pool.set(srvr.details.base_url, {
+            details: srvr.details,
+            status: {
+              code: 200,
+              health: "Healthy",
+            },
+          });
+        }
+      }
+
+      if (unheatlhyServers.length <= 0) this.stopMonitoring();
+
+      this.monitorCycle = false;
+
+      logger.info(
+        [...this.pool.values()].map((v) => ({ url: v.details.base_url, ...v.status })),
+        "SERVER POOL STATUS"
+      );
+    }, INTERVAL);
   }
 
   private checkIfNoOp() {
-    if ([...this.pool].length <= 0) this.no_op = "unavailable";
+    if (this.getHealthyServers().length <= 0) this.no_op = "unavailable";
     else this.no_op = "available";
+  }
+
+  setUnhealthyServer(server: Server) {
+    this.pool.set(server.details.base_url, {
+      details: server.details,
+      status: {
+        code: 500,
+        health: "Unhealthy",
+      },
+    });
   }
 
   stopMonitoring() {
@@ -102,14 +125,14 @@ export class ServerPool {
   }
 
   getHealthyServers() {
-    return [...this.pool.entries()].map(([_, v]) => v).filter((s) => s.status.health !== "Unhealthy");
+    return [...this.pool.values()].map((v) => v).filter((s) => s.status.health !== "Unhealthy");
   }
 
   getUnhealthyServers() {
-    return [...this.pool.entries()].map(([_, v]) => v).filter((s) => s.status.health !== "Healthy");
+    return [...this.pool.values()].map((v) => v).filter((s) => s.status.health !== "Healthy");
   }
 
   getServers() {
-    return [...this.pool.entries()].map(([_, v]) => v);
+    return [...this.pool.values()].map((v) => v);
   }
 }

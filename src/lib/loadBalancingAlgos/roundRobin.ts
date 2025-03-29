@@ -1,16 +1,21 @@
 import { Server } from "../serverPool/serverPool";
-import { AlgoClass } from "./abstract";
+import { ILBAlgo } from "./abstract";
 
-export class RoundRobin implements AlgoClass {
-  private lastSelectedServer: number;
+export class RoundRobin implements ILBAlgo {
+  private lastIndx: number;
 
   constructor() {
-    this.lastSelectedServer = -1;
+    this.lastIndx = -1;
   }
 
   getServer(servers: Server[]) {
-    const curServer = (this.lastSelectedServer + 1) % servers.length;
-    this.lastSelectedServer = curServer;
-    return servers[curServer] ?? null;
+    if (this.lastIndx < servers.length) {
+      const newIdx = (this.lastIndx + 1) % servers.length;
+      this.lastIndx = newIdx;
+      return servers[newIdx];
+    }
+
+    this.lastIndx = 0;
+    return servers[this.lastIndx];
   }
 }

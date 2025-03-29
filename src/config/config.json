@@ -6,21 +6,24 @@
       "endpoint": "/",
       "host": "localhost",
       "port": 9001,
-      "base_url": "http://localhost:9001"
+      "base_url": "http://localhost:9001",
+      "weight": 0.3
     },
     {
       "name": "server-2",
       "endpoint": "/",
       "host": "localhost",
       "port": 9002,
-      "base_url": "http://localhost:9002"
+      "base_url": "http://localhost:9002",
+      "weight": 0.5
     },
     {
       "name": "server-3",
       "endpoint": "/",
       "host": "localhost",
       "port": 9003,
-      "base_url": "http://localhost:9003"
+      "base_url": "http://localhost:9003",
+      "weight": 0.1
     }
   ],
   "healthCheck": {

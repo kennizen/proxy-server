@@ -1,4 +1,4 @@
-export interface ServerConfig {
+export interface IServerConfig {
   port: number;
   resources: {
     name: string;
@@ -6,9 +6,14 @@ export interface ServerConfig {
     host: string;
     port: number;
     base_url: string;
+    weight?: number;
   }[];
   healthCheck: {
     interval: number;
     timeout: number;
   };
+}
+
+export interface IError extends Error {
+  code: string | number;
 }
