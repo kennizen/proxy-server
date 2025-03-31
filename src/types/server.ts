@@ -1,3 +1,5 @@
+import { AlgoType } from "../lib/loadBalancingAlgos/LBAlgoFactory";
+
 export interface IServerConfig {
   port: number;
   resources: {
@@ -12,6 +14,7 @@ export interface IServerConfig {
     interval: number;
     timeout: number;
   };
+  lbAlgo: AlgoType;
 }
 
 export interface IError extends Error {

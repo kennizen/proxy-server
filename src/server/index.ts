@@ -1,14 +1,22 @@
 import { createServer } from "http";
 import serverConfig from "../config/config.json";
-import { RoundRobin } from "../lib/loadBalancingAlgos/roundRobin";
+import { LBAlgoFactory } from "../lib/loadBalancingAlgos/LBAlgoFactory";
 import { ServerPool } from "../lib/serverPool/serverPool";
 import { LoadBalancer } from "../loadBalancer/loadBalancer";
 import logger from "../utils/logger";
-import { Random } from "../lib/loadBalancingAlgos/random";
+import { validate } from "../config/config";
+import { inspect } from "util";
+
+const isConfigValid = validate(serverConfig);
+
+if (!isConfigValid.success) {
+  console.error(inspect(isConfigValid.error, false, null, true));
+  process.kill(process.pid, "SIGTERM");
+}
 
 const PORT = serverConfig.port ?? 8080;
 const serverPool = new ServerPool(serverConfig.resources);
-const loadBalancer = new LoadBalancer(serverPool, new Random());
+const loadBalancer = new LoadBalancer(serverPool, LBAlgoFactory.getAlgo("weighted_round_robin"));
 
 const server = createServer((req, res) => {
   logger.info(req, "CLIENT REQUEST");
