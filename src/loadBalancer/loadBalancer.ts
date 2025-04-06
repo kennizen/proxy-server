@@ -38,21 +38,8 @@ export class LoadBalancer implements ILoadbalancer {
     logger.info(server, "SERVER FOR SERVING REQUEST");
 
     const req = request(options, (res) => {
-      let data = "";
-
-      res.on("data", (chunk) => (data += chunk));
-
-      res.on("error", () => {
-        logger.error(options, "ERROR FETCHING DATA FROM DESTINATION SERVER");
-
-        clientRes.writeHead(500);
-        clientRes.end("Internal server error");
-      });
-
-      res.on("end", () => {
-        clientRes.writeHead(res.statusCode ?? 500, res.headers);
-        clientRes.end(data);
-      });
+      clientRes.writeHead(res.statusCode ?? 500, res.headers);
+      res.pipe(clientRes);
     }).on("error", (err) => {
       logger.error(err, "PROXY ERROR");
 
@@ -64,6 +51,10 @@ export class LoadBalancer implements ILoadbalancer {
 
       // request a new server
       this.request(clientRequest, clientRes);
+    });
+
+    req.setTimeout(5000, () => {
+      req.destroy();
     });
 
     clientRequest.pipe(req);
